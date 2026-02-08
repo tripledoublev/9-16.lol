@@ -1,0 +1,41 @@
+{
+	"lexicon": 1,
+	"id": "lol.916.frame.image",
+	"defs": {
+		"main": {
+			"type": "record",
+			"key": "tid",
+			"record": {
+				"type": "object",
+				"required": ["createdAt", "image"],
+				"properties": {
+					"createdAt": {
+						"type": "string",
+						"format": "datetime"
+					},
+					"text": {
+						"type": "string",
+						"maxLength": 240
+					},
+					"alt": {
+						"type": "string",
+						"maxLength": 300
+					},
+					"aspect": {
+						"type": "string",
+						"enum": ["9:16", "original", "other"]
+					},
+					"image": {
+						"type": "blob",
+						"accept": ["image/jpeg", "image/webp", "image/png"],
+						"maxSize": 2000000
+					},
+					"expiresAt": {
+						"type": "string",
+						"format": "datetime"
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"client_id": "https://9-16.lol/client-metadata.json",
+	"client_name": "9:16.lol",
+	"client_uri": "https://9-16.lol",
+	"redirect_uris": ["https://9-16.lol/"],
+	"scope": "atproto transition:generic repo:lol.916.frame.image blob?accept=image/*",
+	"grant_types": ["authorization_code", "refresh_token"],
+	"response_types": ["code"],
+	"token_endpoint_auth_method": "none",
+	"application_type": "web",
+	"dpop_bound_access_tokens": true
+}
