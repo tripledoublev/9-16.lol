@@ -13,7 +13,7 @@
 <svelte:head>
 	<title>9:16.lol</title>
 	<meta name="description" content="9:16 frames on ATProto" />
-	<link rel="icon" href="/favicon.svg" />
+	<link rel="icon" href="/9x16.svg" />
 </svelte:head>
 
 {#if user.isInitializing}

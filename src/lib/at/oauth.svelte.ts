@@ -36,9 +36,24 @@ export const user = $state({
 export async function initClient() {
 	user.isInitializing = true;
 
-	const clientId = dev
+	// SvelteKit's `dev` is false for `npm run preview`, even if you're testing on localhost.
+	// AT Protocol OAuth supports a special "localhost" client_id form that avoids hosting/fetching a
+	// client metadata document (and sidesteps PDS hostname restrictions during local testing).
+	const isLoopbackHost = (hostname: string) =>
+		hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '::1';
+
+	const runtimeUrl = new URL(window.location.href);
+	const isLocalRuntime = dev || isLoopbackHost(runtimeUrl.hostname);
+
+	// Redirect URI must use 127.0.0.1 (not "localhost") per RFC 8252.
+	const redirectOrigin =
+		runtimeUrl.hostname === 'localhost'
+			? `${runtimeUrl.protocol}//127.0.0.1${runtimeUrl.port ? `:${runtimeUrl.port}` : ''}`
+			: runtimeUrl.origin;
+
+	const clientId = isLocalRuntime
 		? `http://localhost` +
-			`?redirect_uri=${encodeURIComponent('http://127.0.0.1:5173' + REDIRECT_PATH)}` +
+			`?redirect_uri=${encodeURIComponent(redirectOrigin + REDIRECT_PATH)}` +
 			`&scope=${encodeURIComponent(metadata.scope)}`
 		: metadata.client_id;
 
@@ -52,7 +67,7 @@ export async function initClient() {
 	configureOAuth({
 		metadata: {
 			client_id: clientId,
-			redirect_uri: `${dev ? 'http://127.0.0.1:5173' + REDIRECT_PATH : metadata.redirect_uris[0]}`
+			redirect_uri: `${isLocalRuntime ? redirectOrigin + REDIRECT_PATH : metadata.redirect_uris[0]}`
 		},
 		identityResolver: new LocalActorResolver({
 			handleResolver: handleResolver,

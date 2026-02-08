@@ -112,7 +112,7 @@
 		<!-- Frames count -->
 		<div class="border-b border-gray-800 pb-4 mb-4">
 			<span class="text-white font-medium">{frames.length}</span>
-			<span class="text-gray-400"> frames</span>
+			<span class="text-gray-400"> {frames.length === 1 ? 'frame' : 'frames'}</span>
 		</div>
 
 		<!-- Frames grid -->

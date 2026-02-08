@@ -17,16 +17,16 @@
 			class="flex flex-col items-center gap-1 flex-shrink-0"
 		>
 			<div
-				class="w-16 h-16 rounded-full p-0.5 {author.hasUnseen
-					? 'bg-gradient-to-tr from-blue-500 to-purple-500'
-					: 'bg-gray-700'}"
+				class="w-16 h-16 rounded-full {author.hasUnseen
+					? 'border-2 border-blue-500'
+					: 'border-2 border-gray-700'}"
 			>
-				<div class="w-full h-full rounded-full overflow-hidden bg-gray-800">
+				<div class="w-full h-full rounded-full overflow-hidden bg-gray-800 p-0.5">
 					{#if author.avatar}
 						<img
 							src={author.avatar}
 							alt={author.handle}
-							class="w-full h-full object-cover"
+							class="w-full h-full object-cover rounded-full"
 						/>
 					{:else}
 						<div
@@ -37,7 +37,7 @@
 					{/if}
 				</div>
 			</div>
-			<span class="text-xs text-gray-400 max-w-16 truncate">
+			<span class="text-sm text-gray-300 max-w-16 truncate">
 				{author.displayName ?? author.handle}
 			</span>
 		</button>

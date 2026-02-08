@@ -209,32 +209,23 @@ export async function* createFeedGenerator(
 	while (queue.length > 0 || initializing.length > 0) {
 		while (initializing.length < CONCURRENCY && queue.length > 0) {
 			const did = queue.shift()!;
-			const p = initAuthor(did).then((state) => {
-				if (state && state.buffer.length > 0) {
-					authorStates.set(did, state);
-				}
-			});
+			const p = initAuthor(did)
+				.then((state) => {
+					if (state && state.buffer.length > 0) {
+						authorStates.set(did, state);
+					}
+				})
+				.finally(() => {
+					const idx = initializing.indexOf(p);
+					if (idx !== -1) initializing.splice(idx, 1);
+				});
 			initializing.push(p);
 		}
 
 		if (initializing.length > 0) {
 			await Promise.race(initializing);
-			// Remove completed promises
-			for (let i = initializing.length - 1; i >= 0; i--) {
-				// Check if promise is settled by racing with already-resolved promise
-				const result = await Promise.race([
-					initializing[i].then(() => true).catch(() => true),
-					Promise.resolve(false)
-				]);
-				if (result) {
-					initializing.splice(i, 1);
-				}
-			}
 		}
 	}
-
-	// Wait for all to complete
-	await Promise.allSettled(initializing);
 
 	// Build heap from authors
 	const heap = new MaxHeap<AuthorState>((a, b) => {

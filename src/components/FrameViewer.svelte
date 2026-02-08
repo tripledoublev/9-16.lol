@@ -91,7 +91,7 @@
 	<!-- Progress bars -->
 	<div class="absolute top-0 left-0 right-0 z-10 flex gap-1 p-2">
 		{#each author.frames as _, i}
-			<div class="flex-1 h-0.5 rounded-full overflow-hidden bg-white/30">
+			<div class="flex-1 h-px rounded-full overflow-hidden bg-white/30">
 				<div
 					class="h-full bg-white transition-all duration-200"
 					style="width: {i < frameIndex ? '100%' : i === frameIndex ? '100%' : '0%'}"
@@ -127,7 +127,7 @@
 				e.stopPropagation();
 				onClose();
 			}}
-			class="text-white p-2 hover:bg-white/10 rounded-full"
+			class="text-white p-2 hover:opacity-75 transition-opacity"
 			aria-label="Close"
 		>
 			<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +149,7 @@
 
 	<!-- Text overlay at bottom -->
 	{#if frame?.value.text}
-		<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+		<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
 			<p class="text-white text-sm">{frame.value.text}</p>
 		</div>
 	{/if}
