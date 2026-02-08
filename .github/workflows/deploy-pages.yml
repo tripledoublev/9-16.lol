@@ -34,8 +34,10 @@ jobs:
         run: npm run build
 
       # Prevent GitHub Pages from running Jekyll and ignoring files/dirs that start with "_".
-      - name: Disable Jekyll
-        run: touch build/.nojekyll
+      - name: Prepare Pages artifacts
+        run: |
+          touch build/.nojekyll
+          cp build/index.html build/404.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
