@@ -2,9 +2,9 @@
 	import { page } from '$app/state';
 	import { user, listFrames, getFrameImageUrl, logout, deleteFrame, type FrameRecord } from '$lib/at';
 	import { getPublicClient } from '$lib/at/client';
-	import type { Did } from '@atcute/lexicons';
+	import { resolveHandle } from '$lib/at/did';
+	import type { Did, Handle } from '@atcute/lexicons';
 	import type { AppBskyActorDefs } from '@atcute/bluesky';
-	import { onMount } from 'svelte';
 
 	let profile = $state<AppBskyActorDefs.ProfileViewDetailed | null>(null);
 	let frames = $state<FrameRecord[]>([]);
@@ -12,20 +12,39 @@
 	let error = $state<string | null>(null);
 	let selectedFrame = $state<FrameRecord | null>(null);
 	let isDeleting = $state(false);
+	let resolvedDid = $state<Did | null>(null);
 
-	const did = $derived(page.params.id as Did);
-	const isOwnProfile = $derived(user.did === did);
+	const paramId = $derived(page.params.id);
+	const did = $derived(resolvedDid);
+	const isOwnProfile = $derived(did != null && user.did === did);
 
-	onMount(async () => {
-		await loadProfile();
-		await loadFrames();
+	$effect(() => {
+		const id = paramId;
+		if (!id) return;
+		if (id.startsWith('did:')) {
+			resolvedDid = id as Did;
+		} else {
+			resolvedDid = null;
+			resolveHandle(id as Handle).then((d) => {
+				resolvedDid = d;
+			}).catch((e) => {
+				console.error('Failed to resolve handle:', e);
+				error = 'Could not resolve handle';
+			});
+		}
+	});
+
+	$effect(() => {
+		if (!did) return;
+		loadProfile();
+		loadFrames();
 	});
 
 	async function loadProfile() {
 		try {
 			const client = getPublicClient();
 			const response = await client.get('app.bsky.actor.getProfile', {
-				params: { actor: did }
+				params: { actor: did! }
 			});
 
 			if (response.ok) {
@@ -41,7 +60,7 @@
 		error = null;
 
 		try {
-			const result = await listFrames(did, { limit: 50 });
+			const result = await listFrames(did!, { limit: 50 });
 			frames = result.frames;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load frames';
@@ -119,9 +138,9 @@
 			</div>
 			<div class="flex-1 min-w-0">
 				<h2 class="text-xl font-bold text-white truncate">
-					{profile?.displayName ?? profile?.handle ?? did}
+					{profile?.displayName ?? profile?.handle ?? paramId}
 				</h2>
-				<p class="text-gray-400 truncate">@{profile?.handle ?? did}</p>
+				<p class="text-gray-400 truncate">@{profile?.handle ?? paramId}</p>
 				{#if profile?.description}
 					<p class="text-gray-300 text-sm mt-1 line-clamp-2">{profile.description}</p>
 				{/if}
@@ -171,7 +190,7 @@
 						class="aspect-[9/16] bg-gray-900 rounded overflow-hidden hover:opacity-80 transition-opacity"
 					>
 						<img
-							src={getFrameImageUrl(did, frame.value.image.ref.$link)}
+							src={getFrameImageUrl(did!, frame.value.image.ref.$link)}
 							alt={frame.value.alt ?? 'Frame'}
 							class="w-full h-full object-cover"
 							loading="lazy"
@@ -219,7 +238,7 @@
 			</button>
 
 			<img
-				src={getFrameImageUrl(did, selectedFrame.value.image.ref.$link)}
+				src={getFrameImageUrl(did!, selectedFrame.value.image.ref.$link)}
 				alt={selectedFrame.value.alt ?? 'Frame'}
 				class="max-h-full max-w-full object-contain rounded-lg"
 			/>
