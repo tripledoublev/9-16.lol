@@ -137,7 +137,7 @@
 	</div>
 
 	<!-- Frame image -->
-	<div class="flex-1 flex items-center justify-center p-4">
+	<div class="flex-1 flex items-center justify-center p-4 min-w-0 min-h-0">
 		{#if frame}
 			<img
 				src={imageUrl}

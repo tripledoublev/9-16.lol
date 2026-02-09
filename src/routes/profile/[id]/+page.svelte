@@ -77,6 +77,17 @@
 		selectedFrame = null;
 	}
 
+	$effect(() => {
+		if (!selectedFrame) return;
+		document.body.style.overflow = 'hidden';
+		const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeViewer(); };
+		window.addEventListener('keydown', onKey);
+		return () => {
+			document.body.style.overflow = '';
+			window.removeEventListener('keydown', onKey);
+		};
+	});
+
 	async function handleDelete() {
 		if (!selectedFrame || isDeleting) return;
 		if (!confirm('Delete this frame?')) return;
@@ -207,11 +218,12 @@
 			class="fixed inset-0 bg-black z-50 flex items-center justify-center p-4"
 			role="dialog"
 			aria-modal="true"
+			onclick={closeViewer}
 		>
 			{#if isOwnProfile}
 				<button
 					type="button"
-					onclick={handleDelete}
+					onclick={(e) => { e.stopPropagation(); handleDelete(); }}
 					disabled={isDeleting}
 					class="absolute top-4 left-4 text-white p-2 hover:bg-white/10 rounded-full z-10 disabled:opacity-50"
 					aria-label="Delete frame"
@@ -228,7 +240,7 @@
 
 			<button
 				type="button"
-				onclick={closeViewer}
+				onclick={(e) => { e.stopPropagation(); closeViewer(); }}
 				class="absolute top-4 right-4 text-white p-2 hover:bg-white/10 rounded-full z-10"
 				aria-label="Close"
 			>
@@ -241,13 +253,15 @@
 				src={getFrameImageUrl(did!, selectedFrame.value.image.ref.$link)}
 				alt={selectedFrame.value.alt ?? 'Frame'}
 				class="max-h-full max-w-full object-contain rounded-lg"
+				onclick={(e) => e.stopPropagation()}
 			/>
 
 			{#if selectedFrame.value.text}
-				<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+				<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent" onclick={(e) => e.stopPropagation()}>
 					<p class="text-white text-sm">{selectedFrame.value.text}</p>
 				</div>
 			{/if}
 		</div>
+
 	{/if}
 </div>
