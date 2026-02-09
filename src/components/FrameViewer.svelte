@@ -153,9 +153,4 @@
 			<p class="text-white text-sm">{frame.value.text}</p>
 		</div>
 	{/if}
-
-	<!-- Navigation hints -->
-	<div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-500 text-xs">
-		{authorIndex + 1} / {totalAuthors}
-	</div>
 </div>
