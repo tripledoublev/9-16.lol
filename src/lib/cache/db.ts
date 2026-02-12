@@ -92,6 +92,20 @@ class FrameDatabase extends Dexie {
 			relayReposCache: 'key, expiresAt',
 			repoActivityCache: 'key, collection, did, checkedAt, expiresAt'
 		});
+		this.version(3)
+			.stores({
+				didDoc: 'key, expiresAt',
+				pdsEndpoint: 'did, expiresAt',
+				authorFrames: 'key, did, expiresAt',
+				seenState: '[authorDid+viewerDid], updatedAt',
+				follows: 'viewerDid, expiresAt',
+				profileCache: 'did, expiresAt',
+				relayReposCache: 'key, expiresAt',
+				repoActivityCache: 'key, collection, did, checkedAt, expiresAt'
+			})
+			.upgrade(async (tx) => {
+				await tx.table('repoActivityCache').clear();
+			});
 	}
 }
 
