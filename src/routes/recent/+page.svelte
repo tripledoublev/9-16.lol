@@ -7,6 +7,7 @@
 	import type { Did } from '@atcute/lexicons';
 	import {
 		getRecentActiveRepos,
+		refreshRecentActivityForDid,
 		updateRecentActivityFromJetstream,
 		type RecentActivity
 	} from '$lib/at/recent';
@@ -66,6 +67,13 @@
 			currentFrameIndex = 0;
 		}
 		progressKey++;
+
+		refreshRecentActivityForDid(frame.did)
+			.then((activity) => {
+				if (!activity) return;
+				upsertFrame(activityToFrame(activity));
+			})
+			.catch((e) => console.error('Failed to refresh frame after image 404:', e));
 	}
 
 	async function loadInitial() {

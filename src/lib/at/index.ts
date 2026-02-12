@@ -13,6 +13,7 @@ export {
 export {
 	getRecentActiveRepos,
 	listReposByCollection,
+	refreshRecentActivityForDid,
 	updateRecentActivityFromJetstream,
 	type RecentActivity
 } from './recent';

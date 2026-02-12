@@ -135,6 +135,13 @@ async function fetchLatestForDid(
 	}
 }
 
+export async function refreshRecentActivityForDid(
+	did: Did,
+	collection: string = COLLECTION
+): Promise<RecentActivity | null> {
+	return fetchLatestForDid(did, collection);
+}
+
 async function runBatches<T, R>(
 	items: T[],
 	size: number,
