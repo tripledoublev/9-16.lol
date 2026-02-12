@@ -16,7 +16,7 @@ const ACTIVITY_BATCH_SIZE = 20;
 export interface RecentActivity {
 	did: Did;
 	createdAt: string;
-	cid: string;
+	blobCid: string;
 	text?: string;
 	alt?: string;
 }
@@ -31,11 +31,13 @@ interface ListReposByCollectionOutput {
 }
 
 interface RepoRecord {
-	cid: string;
 	value?: {
 		createdAt?: string;
 		text?: string;
 		alt?: string;
+		image?: {
+			ref?: { $link?: string };
+		};
 	};
 }
 
@@ -104,26 +106,27 @@ async function fetchLatestForDid(
 		const data = response.data as ListRecordsOutput;
 		const record = data.records?.[0];
 		const createdAt = record?.value?.createdAt;
+		const blobCid = record?.value?.image?.ref?.$link;
 
-		if (!record?.cid || !createdAt) {
+		if (!blobCid || !createdAt) {
 			await setRepoActivityCache(collection, did, {});
 			return null;
 		}
 
 		const activity: RecentActivity = {
 			did,
-			cid: record.cid,
+			blobCid,
 			createdAt,
 			text: record.value?.text,
 			alt: record.value?.alt
 		};
 
-		await setRepoActivityCache(collection, did, {
-			latestCreatedAt: activity.createdAt,
-			latestCid: activity.cid,
-			latestText: activity.text,
-			latestAlt: activity.alt
-		});
+			await setRepoActivityCache(collection, did, {
+				latestCreatedAt: activity.createdAt,
+				latestCid: activity.blobCid,
+				latestText: activity.text,
+				latestAlt: activity.alt
+			});
 
 		return activity;
 	} catch {
@@ -167,7 +170,7 @@ export async function getRecentActiveRepos(options: {
 			activities.push({
 				did: cached.did,
 				createdAt: cached.latestCreatedAt,
-				cid: cached.latestCid,
+				blobCid: cached.latestCid,
 				text: cached.latestText,
 				alt: cached.latestAlt
 			});
@@ -197,7 +200,7 @@ export async function getRecentActiveRepos(options: {
 
 export async function updateRecentActivityFromJetstream(
 	did: Did,
-	cid: string,
+	blobCid: string,
 	createdAt: string,
 	text?: string,
 	alt?: string,
@@ -206,7 +209,7 @@ export async function updateRecentActivityFromJetstream(
 	await addDidToRelayReposCache(collection, did);
 	await setRepoActivityCache(collection, did, {
 		latestCreatedAt: createdAt,
-		latestCid: cid,
+		latestCid: blobCid,
 		latestText: text,
 		latestAlt: alt
 	});

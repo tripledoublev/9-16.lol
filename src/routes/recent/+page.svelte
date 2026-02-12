@@ -13,7 +13,7 @@
 
 	interface StreamedFrame {
 		did: Did;
-		cid: string;
+		blobCid: string;
 		createdAt: number;
 		text?: string;
 		alt?: string;
@@ -30,7 +30,7 @@
 	function activityToFrame(activity: RecentActivity): StreamedFrame {
 		return {
 			did: activity.did,
-			cid: activity.cid,
+			blobCid: activity.blobCid,
 			createdAt: new Date(activity.createdAt).getTime(),
 			text: activity.text,
 			alt: activity.alt
@@ -48,6 +48,23 @@
 			.slice(0, 100);
 
 		currentFrameIndex = 0;
+		progressKey++;
+	}
+
+	function handleImageError(frame: StreamedFrame) {
+		const idx = frames.findIndex((f) => f.did === frame.did && f.blobCid === frame.blobCid);
+		if (idx === -1) return;
+
+		frames.splice(idx, 1);
+		frames = [...frames];
+		if (frames.length === 0) {
+			currentFrameIndex = 0;
+			return;
+		}
+
+		if (currentFrameIndex >= frames.length) {
+			currentFrameIndex = 0;
+		}
 		progressKey++;
 	}
 
@@ -78,35 +95,40 @@
 					break;
 				}
 				if (event.kind === 'commit') {
-					const commit = event.commit as CommitOperation & {
-						collection?: string;
-						operation?: string;
-						cid?: string;
-						record?: { createdAt?: string; text?: string; alt?: string };
-					};
-
-					if (
-						commit.collection === COLLECTION &&
-						commit.operation === 'create' &&
-						commit.cid &&
-						commit.record?.createdAt
-					) {
-						const frame: StreamedFrame = {
-							did: event.did,
-							cid: commit.cid,
-							createdAt: new Date(commit.record.createdAt).getTime(),
-							text: commit.record.text,
-							alt: commit.record.alt
+						const commit = event.commit as CommitOperation & {
+							collection?: string;
+							operation?: string;
+							record?: {
+								createdAt?: string;
+								text?: string;
+								alt?: string;
+								image?: { ref?: { $link?: string } };
+							};
 						};
+						const blobCid = commit.record?.image?.ref?.$link;
+
+						if (
+							commit.collection === COLLECTION &&
+							commit.operation === 'create' &&
+							blobCid &&
+							commit.record?.createdAt
+						) {
+							const frame: StreamedFrame = {
+								did: event.did,
+								blobCid,
+								createdAt: new Date(commit.record.createdAt).getTime(),
+								text: commit.record.text,
+								alt: commit.record.alt
+							};
 
 						upsertFrame(frame);
-						updateRecentActivityFromJetstream(
-							event.did,
-							commit.cid,
-							commit.record.createdAt,
-							commit.record.text,
-							commit.record.alt
-						).catch((e) => console.error('Failed to refresh recent cache:', e));
+							updateRecentActivityFromJetstream(
+								event.did,
+								blobCid,
+								commit.record.createdAt,
+								commit.record.text,
+								commit.record.alt
+							).catch((e) => console.error('Failed to refresh recent cache:', e));
 					}
 				}
 			}
@@ -167,9 +189,10 @@
 
 			<!-- Frame image -->
 			<img
-				src={getFrameImageUrl(currentFrame.did, currentFrame.cid)}
+				src={getFrameImageUrl(currentFrame.did, currentFrame.blobCid)}
 				alt={currentFrame.alt ?? 'Frame'}
 				class="w-full h-full object-contain"
+				onerror={() => handleImageError(currentFrame)}
 			/>
 
 			<!-- Text overlay -->
