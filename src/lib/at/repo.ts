@@ -90,7 +90,7 @@ export async function listFrames(
 			collection: COLLECTION,
 			limit,
 			cursor: options.cursor,
-			reverse: true // Newest first
+			reverse: true
 		}
 	});
 

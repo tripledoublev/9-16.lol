@@ -93,8 +93,8 @@
 	}
 </script>
 
-<div class="flex flex-col gap-4 p-4 max-w-md mx-auto">
-	<h1 class="text-xl font-bold text-white">New Frame</h1>
+<div class="flex flex-col gap-4 p-4 max-w-lg mx-auto">
+
 
 	<!-- Image selector -->
 	<div class="relative">
@@ -107,7 +107,7 @@
 		/>
 
 		{#if previewUrl}
-			<div class="relative aspect-[9/16] bg-gray-900 rounded-lg overflow-hidden">
+			<div class="relative w-full aspect-[36/49] bg-black rounded-lg overflow-hidden">
 				<img src={previewUrl} alt="Preview" class="w-full h-full object-cover" />
 				<button
 					type="button"
@@ -121,9 +121,9 @@
 			<button
 				type="button"
 				onclick={() => fileInput.click()}
-				class="w-full aspect-[9/16] bg-gray-900 rounded-lg border-2 border-dashed border-gray-700 flex flex-col items-center justify-center gap-2 hover:border-gray-600 transition-colors"
+				class="w-full aspect-[36/49] bg-black rounded-lg border-2 border-dashed border-white flex flex-col items-center justify-center gap-2 hover:border-gray-600 transition-colors"
 			>
-				<svg class="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"
 						stroke-linejoin="round"
@@ -131,41 +131,43 @@
 						d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
 					/>
 				</svg>
-				<span class="text-gray-500">Tap to select image</span>
-				<span class="text-gray-600 text-sm">9:16 aspect ratio</span>
+				<span class="text-gray-200">Tap to select image</span>
+				<span class="text-gray-500 text-sm">9:16 aspect ratio</span>
 			</button>
 		{/if}
 	</div>
 
 	<!-- Text input -->
 	<div>
-		<label for="text" class="block text-sm text-gray-400 mb-1">Caption (optional)</label>
+		<label for="text" class="sr-only block text-sm text-white mb-1">Caption (optional)</label>
 		<textarea
 			id="text"
 			bind:value={text}
 			maxlength={240}
 			rows={2}
-			placeholder="Add a caption..."
-			class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
+			placeholder="Add a caption (optional)"
+			class="w-full bg-black border border-white rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-white resize-none"
 		></textarea>
-		<span class="text-xs text-gray-500">{text.length}/240</span>
+		<div class="flex justify-end">
+			<span class="text-xs text-gray-400">{text.length}/240</span>
+		</div>
 	</div>
 
 	<!-- Alt text -->
 	<div>
-		<label for="alt" class="block text-sm text-gray-400 mb-1">Alt text (optional)</label>
+		<label for="alt" class="sr-only block text-sm text-white mb-1">Alt text (optional)</label>
 		<input
 			id="alt"
 			type="text"
 			bind:value={altText}
 			maxlength={300}
-			placeholder="Describe the image..."
-			class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+			placeholder="Describe the image (optional)"
+			class="w-full bg-black border border-white rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-white"
 		/>
 	</div>
 
 	{#if error}
-		<p class="text-red-500 text-sm">{error}</p>
+		<p class="text-white text-sm">{error}</p>
 	{/if}
 
 	<!-- Submit button -->
@@ -173,14 +175,14 @@
 		type="button"
 		onclick={handleSubmit}
 		disabled={!selectedFile || isUploading}
-		class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
+		class="w-full py-3 bg-white text-black rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 transition-colors"
 	>
 		{#if isUploading}
 			Posting...
 		{:else}
-			Post Frame
+			Post
 		{/if}
 	</button>
 
-	<a href="/" class="text-center text-gray-500 hover:text-gray-400">Cancel</a>
+	<a href="/" class="text-center text-white hover:text-gray-200">Cancel</a>
 </div>

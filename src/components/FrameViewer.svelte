@@ -102,25 +102,27 @@
 
 	<!-- Author info header -->
 	<div class="absolute top-8 left-0 right-0 z-10 px-4 py-2 flex items-center gap-3">
-		<div class="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
-			{#if author.avatar}
-				<img src={author.avatar} alt={author.handle} class="w-full h-full object-cover" />
-			{:else}
-				<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">
-					{author.handle[0]?.toUpperCase() ?? '?'}
-				</div>
-			{/if}
-		</div>
-		<div class="flex-1 min-w-0">
-			<p class="text-white text-sm font-medium truncate">
-				{author.displayName ?? author.handle}
-			</p>
-			<p class="text-gray-400 text-xs">
-				{#if frame}
-					{new Date(frame.value.createdAt).toLocaleDateString()}
+		<a href="/profile/{author.did}" class="flex items-center gap-3 flex-1 min-w-0" onclick={(e) => e.stopPropagation()}>
+			<div class="w-8 h-8 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
+				{#if author.avatar}
+					<img src={author.avatar} alt={author.handle} class="w-full h-full object-cover" />
+				{:else}
+					<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+						{author.handle[0]?.toUpperCase() ?? '?'}
+					</div>
 				{/if}
-			</p>
-		</div>
+			</div>
+			<div class="flex-1 min-w-0">
+				<p class="text-white text-sm font-medium truncate">
+					{author.displayName ?? author.handle}
+				</p>
+				<p class="text-gray-400 text-xs">
+					{#if frame}
+						{new Date(frame.value.createdAt).toLocaleDateString()}
+					{/if}
+				</p>
+			</div>
+		</a>
 		<button
 			type="button"
 			onclick={(e) => {

@@ -18,7 +18,7 @@
 <div class="min-h-screen bg-black">
 	<header class="sticky top-0 z-40 bg-black/90 backdrop-blur-sm border-b border-gray-800">
 		<div class="flex items-center justify-between px-4 py-3">
-			<a href="/" class="text-gray-400 hover:text-white" aria-label="Back">
+			<a href="/" class="text-white hover:text-gray-200" aria-label="Back">
 				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 				</svg>
@@ -31,7 +31,7 @@
 	<main class="p-4">
 		<ActorSearch onSelect={handleSelect} />
 
-		<div class="mt-8 text-center text-gray-500 text-sm">
+		<div class="mt-8 text-center text-white text-sm">
 			<p>Search for users by their handle or display name</p>
 		</div>
 	</main>

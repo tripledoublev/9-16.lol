@@ -1,6 +1,7 @@
 import { Client, simpleFetchHandler } from '@atcute/client';
 import type { Did } from '@atcute/lexicons';
 import { getPDS } from './did';
+import { RELAY_URL } from './settings';
 
 const clientCache = new Map<string, Client>();
 
@@ -26,6 +27,20 @@ export function getPublicClient(): Client {
 
 	const client = new Client({
 		handler: simpleFetchHandler({ service: 'https://public.api.bsky.app' })
+	});
+
+	clientCache.set(key, client);
+	return client;
+}
+
+export function getRelayClient(): Client {
+	const key = 'relay';
+	if (clientCache.has(key)) {
+		return clientCache.get(key)!;
+	}
+
+	const client = new Client({
+		handler: simpleFetchHandler({ service: RELAY_URL })
 	});
 
 	clientCache.set(key, client);

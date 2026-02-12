@@ -1,6 +1,6 @@
 export { user, initClient, login, logout, signup } from './oauth.svelte';
 export { resolveHandle, getPDS, getHandleFromDid } from './did';
-export { getClientForDid, getPublicClient } from './client';
+export { getClientForDid, getPublicClient, getRelayClient } from './client';
 export {
 	createFrame,
 	listFrames,
@@ -10,5 +10,11 @@ export {
 	getFrameThumbnailUrl,
 	type FrameRecord
 } from './repo';
-export { COLLECTION, SITE, permissions } from './settings';
+export {
+	getRecentActiveRepos,
+	listReposByCollection,
+	updateRecentActivityFromJetstream,
+	type RecentActivity
+} from './recent';
+export { COLLECTION, RELAY_URL, SITE, permissions } from './settings';
 export { metadata } from './metadata';

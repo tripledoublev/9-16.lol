@@ -32,10 +32,10 @@
 	}
 </script>
 
-<div class="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-	<div class="w-full max-w-sm">
-		<h1 class="text-3xl font-bold text-white text-center mb-2">9:16</h1>
-		<p class="text-gray-400 text-center mb-8">Sign in with your ATProto account</p>
+<div class="min-h-screen bg-black flex flex-col items-center justify-between p-4 relative">
+	<div class="flex flex-col items-center flex-grow justify-center w-full max-w-sm">
+		<h1 class="text-5xl sm:text-6xl md:text-7xl font-thin text-white text-center mb-4">9:16</h1>
+
 
 		<form onsubmit={handleSubmit} class="space-y-4">
 			<div>
@@ -46,18 +46,22 @@
 					bind:value={handle}
 					placeholder="alice.bsky.social"
 					disabled={isLoading}
-					class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+					class="w-full bg-black border border-white rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-white disabled:opacity-50"
 				/>
 			</div>
 
+			<p class="text-white text-sm text-center mt-2">
+				Use your Bluesky or ATProto handle to sign in, publish images.
+			</p>
+
 			{#if error}
-				<p class="text-red-500 text-sm">{error}</p>
+				<p class="text-white text-sm">{error}</p>
 			{/if}
 
 			<button
 				type="submit"
 				disabled={isLoading}
-				class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50 hover:bg-blue-700 transition-colors"
+				class="w-full py-3 bg-white text-black rounded-lg font-medium disabled:opacity-50 hover:bg-gray-200 transition-colors"
 			>
 				{#if isLoading}
 					<span class="flex items-center justify-center gap-2">
@@ -72,13 +76,13 @@
 
 		<p class="text-gray-500 text-sm text-center mt-6">
 			Don't have an account?
-			<a href="https://bsky.app" target="_blank" rel="noopener" class="text-blue-500 hover:underline">
+			<a href="https://bsky.app" target="_blank" rel="noopener" class="text-white hover:text-gray-200">
 				Create one on Bluesky
 			</a>
 		</p>
+    </div>
 
-		<a href="/" class="block text-center text-gray-500 hover:text-gray-400 mt-4">
-			Back to home
-		</a>
-	</div>
+	<a href="/" class="block text-center text-white hover:text-gray-200 absolute bottom-4 left-0 right-0">
+		Back to home
+	</a>
 </div>

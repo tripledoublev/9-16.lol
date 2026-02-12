@@ -13,6 +13,9 @@
 	let selectedFrame = $state<FrameRecord | null>(null);
 	let isDeleting = $state(false);
 	let resolvedDid = $state<Did | null>(null);
+	let isFollowing = $state(false);
+	let isFollowingLoading = $state(false);
+	let followUri = $state<string | null>(null);
 
 	const paramId = $derived(page.params.id);
 	const did = $derived(resolvedDid);
@@ -38,7 +41,102 @@
 		if (!did) return;
 		loadProfile();
 		loadFrames();
+		checkFollowStatus(); // Check follow status when profile loads
 	});
+
+	async function checkFollowStatus() {
+		if (!user.isLoggedIn || !user.did || !user.client) {
+			isFollowing = false;
+			return;
+		}
+		isFollowingLoading = true;
+		isFollowing = false; // Reset before checking
+		followUri = null; // Reset before checking
+		let cursor: string | undefined = undefined;
+		let foundFollow = false;
+
+		try {
+			do {
+				// @ts-expect-error - com.atproto.repo.listRecords is valid but not typed in bluesky package
+				const response = await user.client.get('com.atproto.repo.listRecords', {
+					params: {
+						repo: user.did,
+						collection: 'app.bsky.graph.follow',
+						cursor: cursor,
+						limit: 100 // Fetch up to 100 records per page
+					}
+				});
+
+				if (response.ok && response.data && response.data.records) {
+					const records = response.data.records;
+					const followRecord = records.find((rec: any) => rec.value.subject === did);
+					if (followRecord) {
+						isFollowing = true;
+						followUri = followRecord.uri;
+						foundFollow = true;
+						break; // Found the follow, no need to fetch more pages
+					}
+					cursor = (response.data as { cursor?: string }).cursor;
+				} else {
+					break; // Exit loop on error or no data
+				}
+			} while (cursor && !foundFollow);
+		} catch (e) {
+			console.error('checkFollowStatus: Failed to check follow status:', e);
+		} finally {
+			isFollowingLoading = false;
+		}
+	}
+
+	async function toggleFollow() {
+		if (!user.isLoggedIn || !user.did || !user.client || isFollowingLoading) return;
+
+		isFollowingLoading = true;
+		try {
+			if (isFollowing) {
+				// Unfollow
+				if (!followUri) throw new Error('Follow URI not found for unfollow');
+				const rkey = followUri.split('/').pop()!;
+				// @ts-expect-error - com.atproto.repo.deleteRecord is valid but not typed in bluesky package
+				await user.client.post('com.atproto.repo.deleteRecord', {
+					input: {
+						repo: user.did,
+						collection: 'app.bsky.graph.follow',
+						rkey
+					}
+				});
+				isFollowing = false;
+				followUri = null;
+			} else {
+				// Follow
+				const rkey = `tid${Date.now()}`; // Generate a unique rkey
+				// @ts-expect-error - com.atproto.repo.createRecord is valid but not typed in bluesky package
+				const response = await user.client.post('com.atproto.repo.createRecord', {
+					input: {
+						repo: user.did,
+						collection: 'app.bsky.graph.follow',
+						rkey,
+						record: {
+							subject: did,
+							createdAt: new Date().toISOString()
+						}
+					}
+				});
+				if (response.ok && response.data) {
+					const data = response.data as { uri?: string };
+					isFollowing = true;
+					followUri = data.uri ?? null;
+				} else {
+					throw new Error('Failed to create follow record');
+				}
+			}
+		} catch (e) {
+			console.error('Failed to toggle follow status:', e);
+			alert('Failed to update follow status');
+		} finally {
+			isFollowingLoading = false;
+		}
+	}
 
 	async function loadProfile() {
 		try {
@@ -128,6 +226,19 @@
 					class="text-red-500 text-sm hover:text-red-400"
 				>
 					Sign out
+				</button>
+			{:else if user.isLoggedIn}
+				<button
+					type="button"
+					onclick={toggleFollow}
+					disabled={isFollowingLoading}
+					class="px-4 py-2 bg-white text-black rounded-full text-sm font-medium disabled:opacity-50 hover:bg-gray-200 transition-colors"
+				>
+					{#if isFollowingLoading}
+						...
+					{:else}
+						{isFollowing ? 'Unfollow' : 'Follow'}
+					{/if}
 				</button>
 			{:else}
 				<div class="w-16"></div>
@@ -219,6 +330,10 @@
 			role="dialog"
 			aria-modal="true"
 			onclick={closeViewer}
+			onkeydown={(e) => {
+				if (e.key === 'Escape') closeViewer();
+			}}
+			tabindex="-1"
 		>
 			{#if isOwnProfile}
 				<button
@@ -253,11 +368,12 @@
 				src={getFrameImageUrl(did!, selectedFrame.value.image.ref.$link)}
 				alt={selectedFrame.value.alt ?? 'Frame'}
 				class="max-h-full max-w-full object-contain rounded-lg"
-				onclick={(e) => e.stopPropagation()}
 			/>
 
 			{#if selectedFrame.value.text}
-				<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent" onclick={(e) => e.stopPropagation()}>
+				<div
+					class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent"
+				>
 					<p class="text-white text-sm">{selectedFrame.value.text}</p>
 				</div>
 			{/if}
