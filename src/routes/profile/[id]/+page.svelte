@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { user, listFrames, getFrameImageUrl, logout, deleteFrame, type FrameRecord } from '$lib/at';
+	import { user, listFrames, getFrameImageUrl, logout, deleteFrame, getAppProfile, putAppProfile, type FrameRecord, type AppProfileRecord } from '$lib/at';
 	import { getPublicClient } from '$lib/at/client';
 	import { resolveHandle } from '$lib/at/did';
 	import type { Did, Handle } from '@atcute/lexicons';
 	import type { AppBskyActorDefs } from '@atcute/bluesky';
 
 	let profile = $state<AppBskyActorDefs.ProfileViewDetailed | null>(null);
+	let appProfile = $state<AppProfileRecord | null>(null);
 	let frames = $state<FrameRecord[]>([]);
 	let isLoading = $state(true);
 	let error = $state<string | null>(null);
@@ -17,9 +18,28 @@
 	let isFollowingLoading = $state(false);
 	let followUri = $state<string | null>(null);
 
+	// Edit profile state
+	let showEditSheet = $state(false);
+	let editDisplayName = $state('');
+	let editBio = $state('');
+	let editAvatarFile = $state<File | null>(null);
+	let editAvatarPreview = $state('');
+	let isSaving = $state(false);
+	let editError = $state('');
+	let fileInput: HTMLInputElement;
+
 	const paramId = $derived(page.params.id);
 	const did = $derived(resolvedDid);
 	const isOwnProfile = $derived(did != null && user.did === did);
+
+	// Derived display values: app profile overrides bsky profile
+	const displayName = $derived(appProfile?.displayName || profile?.displayName || profile?.handle || paramId);
+	const displayBio = $derived(appProfile?.bio ?? profile?.description ?? '');
+	const displayAvatar = $derived(
+		appProfile?.avatar && did
+			? `https://cdn.bsky.app/img/avatar/plain/${did}/${appProfile.avatar.ref.$link}@jpeg`
+			: profile?.avatar ?? ''
+	);
 
 	$effect(() => {
 		const id = paramId;
@@ -141,13 +161,15 @@
 	async function loadProfile() {
 		try {
 			const client = getPublicClient();
-			const response = await client.get('app.bsky.actor.getProfile', {
-				params: { actor: did! }
-			});
+			const [profileResponse, appProfileData] = await Promise.all([
+				client.get('app.bsky.actor.getProfile', { params: { actor: did! } }),
+				getAppProfile(did!).catch(() => null)
+			]);
 
-			if (response.ok) {
-				profile = response.data;
+			if (profileResponse.ok) {
+				profile = profileResponse.data;
 			}
+			appProfile = appProfileData;
 		} catch (e) {
 			console.error('Failed to load profile:', e);
 		}
@@ -204,6 +226,68 @@
 		}
 	}
 
+	function openEditSheet() {
+		editDisplayName = appProfile?.displayName ?? profile?.displayName ?? '';
+		editBio = appProfile?.bio ?? profile?.description ?? '';
+		editAvatarFile = null;
+		editAvatarPreview = '';
+		editError = '';
+		showEditSheet = true;
+	}
+
+	function closeEditSheet() {
+		showEditSheet = false;
+	}
+
+	function handleAvatarSelect(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		if (file.size > 1_000_000) {
+			editError = 'Avatar must be under 1MB';
+			return;
+		}
+		editAvatarFile = file;
+		editAvatarPreview = URL.createObjectURL(file);
+	}
+
+	async function handleSaveProfile() {
+		if (isSaving) return;
+		isSaving = true;
+		editError = '';
+
+		try {
+			await putAppProfile({
+				displayName: editDisplayName || undefined,
+				bio: editBio || undefined,
+				avatar: editAvatarFile ?? undefined,
+				existingAvatar: !editAvatarFile ? appProfile?.avatar : undefined
+			});
+			closeEditSheet();
+			await loadProfile();
+		} catch (e: any) {
+			if (e?.message?.includes('auth') || e?.status === 403) {
+				editError = 'Please sign in again to save profile changes.';
+			} else {
+				editError = e?.message ?? 'Failed to save profile';
+			}
+			console.error('Save profile failed:', e);
+		} finally {
+			isSaving = false;
+		}
+	}
+
+	$effect(() => {
+		if (!showEditSheet) return;
+		document.body.style.overflow = 'hidden';
+		const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeEditSheet(); };
+		window.addEventListener('keydown', onKey);
+		return () => {
+			document.body.style.overflow = '';
+			window.removeEventListener('keydown', onKey);
+		};
+	});
+
 	async function handleLogout() {
 		await logout();
 		window.location.href = '/';
@@ -250,8 +334,8 @@
 		<!-- Profile header -->
 		<div class="flex items-center gap-4 mb-6">
 			<div class="w-20 h-20 rounded-full overflow-hidden bg-gray-800 flex-shrink-0">
-				{#if profile?.avatar}
-					<img src={profile.avatar} alt={profile.handle} class="w-full h-full object-cover" />
+				{#if displayAvatar}
+					<img src={displayAvatar} alt={profile?.handle} class="w-full h-full object-cover" />
 				{:else}
 					<div class="w-full h-full flex items-center justify-center text-gray-400 text-2xl">
 						{profile?.handle?.[0]?.toUpperCase() ?? '?'}
@@ -259,12 +343,23 @@
 				{/if}
 			</div>
 			<div class="flex-1 min-w-0">
-				<h2 class="text-xl font-bold text-white truncate">
-					{profile?.displayName ?? profile?.handle ?? paramId}
-				</h2>
+				<div class="flex items-center gap-2">
+					<h2 class="text-xl font-bold text-white truncate">
+						{displayName}
+					</h2>
+					{#if isOwnProfile}
+						<button
+							type="button"
+							onclick={openEditSheet}
+							class="text-gray-400 hover:text-white text-xs px-2 py-0.5 border border-gray-700 rounded-full hover:border-gray-500 transition-colors flex-shrink-0"
+						>
+							Edit
+						</button>
+					{/if}
+				</div>
 				<p class="text-gray-400 truncate">@{profile?.handle ?? paramId}</p>
-				{#if profile?.description}
-					<p class="text-gray-300 text-sm mt-1 line-clamp-2">{profile.description}</p>
+				{#if displayBio}
+					<p class="text-gray-300 text-sm mt-1 line-clamp-2">{displayBio}</p>
 				{/if}
 			</div>
 		</div>
@@ -304,7 +399,7 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="grid grid-cols-3 gap-1">
+			<div class="grid grid-cols-3 lg:grid-cols-6 gap-1">
 				{#each frames as frame}
 					<button
 						type="button"
@@ -379,5 +474,100 @@
 			{/if}
 		</div>
 
+	{/if}
+
+	<!-- Edit profile sheet -->
+	{#if showEditSheet}
+		<div class="fixed inset-0 bg-black z-50 flex flex-col animate-slideUp">
+			<!-- Top bar -->
+			<div class="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+				<button
+					type="button"
+					onclick={closeEditSheet}
+					class="text-gray-400 hover:text-white text-sm"
+				>
+					Cancel
+				</button>
+				<h2 class="text-white font-semibold">Edit Profile</h2>
+				<button
+					type="button"
+					onclick={handleSaveProfile}
+					disabled={isSaving}
+					class="text-blue-500 font-bold text-sm hover:text-blue-400 disabled:opacity-50"
+				>
+					{#if isSaving}
+						<div class="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin inline-block"></div>
+					{:else}
+						Save
+					{/if}
+				</button>
+			</div>
+
+			<div class="flex-1 overflow-y-auto px-4 pt-8 pb-8">
+				<!-- Avatar -->
+				<div class="flex justify-center mb-8">
+					<button
+						type="button"
+						onclick={() => fileInput.click()}
+						class="relative w-24 h-24 rounded-full overflow-hidden bg-gray-800 group"
+					>
+						{#if editAvatarPreview}
+							<img src={editAvatarPreview} alt="New avatar" class="w-full h-full object-cover" />
+						{:else if displayAvatar}
+							<img src={displayAvatar} alt="Current avatar" class="w-full h-full object-cover" />
+						{:else}
+							<div class="w-full h-full flex items-center justify-center text-gray-400 text-3xl">
+								{profile?.handle?.[0]?.toUpperCase() ?? '?'}
+							</div>
+						{/if}
+						<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+							<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+							</svg>
+						</div>
+					</button>
+					<input
+						bind:this={fileInput}
+						type="file"
+						accept="image/jpeg,image/png,image/webp"
+						class="hidden"
+						onchange={handleAvatarSelect}
+					/>
+				</div>
+
+				<!-- Display name -->
+				<div class="mb-4">
+					<label for="edit-name" class="text-gray-400 text-xs uppercase tracking-wide mb-1 block">Name</label>
+					<input
+						id="edit-name"
+						type="text"
+						bind:value={editDisplayName}
+						maxlength="64"
+						placeholder="Display name"
+						class="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-600"
+					/>
+				</div>
+
+				<!-- Bio -->
+				<div class="mb-4">
+					<label for="edit-bio" class="text-gray-400 text-xs uppercase tracking-wide mb-1 block">Bio</label>
+					<textarea
+						id="edit-bio"
+						bind:value={editBio}
+						maxlength="256"
+						placeholder="Tell people about yourself"
+						rows="3"
+						class="w-full bg-gray-900 text-white rounded-lg px-4 py-3 text-base outline-none focus:ring-1 focus:ring-blue-500 placeholder-gray-600 resize-none"
+					></textarea>
+				</div>
+
+				{#if editError}
+					<p class="text-red-500 text-sm mt-2">{editError}</p>
+				{/if}
+
+				<p class="text-gray-600 text-xs mt-4">Changes are saved to your 9-16.lol profile only and won't affect your Bluesky profile.</p>
+			</div>
+		</div>
 	{/if}
 </div>

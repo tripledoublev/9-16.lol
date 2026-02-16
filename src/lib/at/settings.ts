@@ -2,6 +2,7 @@ import { dev } from '$app/environment';
 
 export const SITE = 'https://9-16.lol';
 export const COLLECTION = 'lol.916.frame.image' as const;
+export const PROFILE_COLLECTION = 'lol.916.user.profile' as const;
 export const RELAY_URL = 'https://relay1.us-east.bsky.network';
 export const REDIRECT_PATH = '/';
 export const DOH_RESOLVER = 'https://mozilla.cloudflare-dns.com/dns-query';
@@ -13,7 +14,7 @@ type Permissions = {
 };
 
 export const permissions = {
-	collections: [COLLECTION],
+	collections: [COLLECTION, PROFILE_COLLECTION],
 	rpc: {},
 	blobs: ['image/*']
 } as const satisfies Permissions;

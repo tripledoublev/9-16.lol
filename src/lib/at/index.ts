@@ -8,7 +8,11 @@ export {
 	deleteFrame,
 	getFrameImageUrl,
 	getFrameThumbnailUrl,
-	type FrameRecord
+	type FrameRecord,
+	getAppProfile,
+	putAppProfile,
+	deleteAppProfile,
+	type AppProfileRecord
 } from './repo';
 export {
 	getRecentActiveRepos,

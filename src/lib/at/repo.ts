@@ -2,7 +2,7 @@ import type { Did } from '@atcute/lexicons';
 import * as TID from '@atcute/tid';
 import { user } from './oauth.svelte';
 import { getClientForDid } from './client';
-import { COLLECTION } from './settings';
+import { COLLECTION, PROFILE_COLLECTION } from './settings';
 
 export interface FrameRecord {
 	uri: string;
@@ -174,4 +174,103 @@ export function getFrameImageUrl(did: Did, cid: string): string {
 
 export function getFrameThumbnailUrl(did: Did, cid: string): string {
 	return `https://cdn.bsky.app/img/feed_thumbnail/plain/${did}/${cid}@jpeg`;
+}
+
+export interface AppProfileRecord {
+	displayName?: string;
+	bio?: string;
+	avatar?: {
+		$type: 'blob';
+		ref: { $link: string };
+		mimeType: string;
+		size: number;
+	};
+	createdAt: string;
+}
+
+export async function getAppProfile(did: Did): Promise<AppProfileRecord | null> {
+	const client = await getClientForDid(did);
+
+	try {
+		// @ts-expect-error - com.atproto.repo.getRecord is valid but not typed
+		const response = await client.get('com.atproto.repo.getRecord', {
+			params: {
+				repo: did,
+				collection: PROFILE_COLLECTION,
+				rkey: 'self'
+			}
+		});
+
+		if (!response.ok || !response.data) return null;
+		// @ts-expect-error - value exists on response
+		return response.data.value as AppProfileRecord;
+	} catch {
+		return null;
+	}
+}
+
+export async function putAppProfile(data: {
+	displayName?: string;
+	bio?: string;
+	avatar?: Blob;
+	existingAvatar?: AppProfileRecord['avatar'];
+}): Promise<void> {
+	if (!user.client || !user.did) {
+		throw new Error('Not logged in');
+	}
+
+	let avatarBlob = data.existingAvatar;
+
+	if (data.avatar) {
+		// @ts-expect-error - com.atproto.repo.uploadBlob is valid but not typed
+		const blobResponse = await user.client.post('com.atproto.repo.uploadBlob', {
+			input: data.avatar
+		});
+
+		if (!blobResponse.ok || !blobResponse.data) {
+			throw new Error('Failed to upload avatar');
+		}
+
+		// @ts-expect-error - blob property exists on response
+		avatarBlob = blobResponse.data.blob as AppProfileRecord['avatar'];
+	}
+
+	const record: AppProfileRecord = {
+		createdAt: new Date().toISOString()
+	};
+
+	if (data.displayName !== undefined) record.displayName = data.displayName;
+	if (data.bio !== undefined) record.bio = data.bio;
+	if (avatarBlob) record.avatar = avatarBlob;
+
+	// @ts-expect-error - com.atproto.repo.putRecord is valid but not typed
+	const response = await user.client.post('com.atproto.repo.putRecord', {
+		input: {
+			repo: user.did,
+			collection: PROFILE_COLLECTION,
+			rkey: 'self',
+			record
+		}
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to save profile');
+	}
+}
+
+export async function deleteAppProfile(): Promise<boolean> {
+	if (!user.client || !user.did) {
+		throw new Error('Not logged in');
+	}
+
+	// @ts-expect-error - com.atproto.repo.deleteRecord is valid but not typed
+	const response = await user.client.post('com.atproto.repo.deleteRecord', {
+		input: {
+			repo: user.did,
+			collection: PROFILE_COLLECTION,
+			rkey: 'self'
+		}
+	});
+
+	return response.ok;
 }
