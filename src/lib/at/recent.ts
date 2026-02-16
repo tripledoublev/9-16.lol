@@ -82,56 +82,51 @@ export async function listReposByCollection(collection: string = COLLECTION): Pr
 	return unique;
 }
 
-async function fetchLatestForDid(
+const FRAMES_PER_DID = 10;
+
+async function fetchFramesForDid(
 	did: Did,
 	collection: string = COLLECTION
-): Promise<RecentActivity | null> {
+): Promise<RecentActivity[]> {
 	try {
 		const client = await getClientForDid(did);
 		// @ts-expect-error - com.atproto.repo.listRecords is valid but not typed in current client setup
 		const response = await client.get('com.atproto.repo.listRecords', {
-			params: {
-				repo: did,
-				collection,
-				limit: 1,
-				reverse: true
-			}
+			params: { repo: did, collection, limit: FRAMES_PER_DID, reverse: true }
 		});
 
 		if (!response.ok || !response.data) {
 			await setRepoActivityCache(collection, did, {});
-			return null;
+			return [];
 		}
 
 		const data = response.data as ListRecordsOutput;
-		const record = data.records?.[0];
-		const createdAt = record?.value?.createdAt;
-		const blobCid = record?.value?.image?.ref?.$link;
+		const activities: RecentActivity[] = [];
 
-		if (!blobCid || !createdAt) {
-			await setRepoActivityCache(collection, did, {});
-			return null;
+		for (const record of data.records ?? []) {
+			const createdAt = record.value?.createdAt;
+			const blobCid = record.value?.image?.ref?.$link;
+			if (blobCid && createdAt) {
+				activities.push({ did, blobCid, createdAt, text: record.value?.text, alt: record.value?.alt });
+			}
 		}
 
-		const activity: RecentActivity = {
-			did,
-			blobCid,
-			createdAt,
-			text: record.value?.text,
-			alt: record.value?.alt
-		};
-
+		if (activities.length > 0) {
+			const latest = activities[0];
 			await setRepoActivityCache(collection, did, {
-				latestCreatedAt: activity.createdAt,
-				latestCid: activity.blobCid,
-				latestText: activity.text,
-				latestAlt: activity.alt
+				latestCreatedAt: latest.createdAt,
+				latestCid: latest.blobCid,
+				latestText: latest.text,
+				latestAlt: latest.alt
 			});
+		} else {
+			await setRepoActivityCache(collection, did, {});
+		}
 
-		return activity;
+		return activities;
 	} catch {
 		await setRepoActivityCache(collection, did, {});
-		return null;
+		return [];
 	}
 }
 
@@ -139,7 +134,8 @@ export async function refreshRecentActivityForDid(
 	did: Did,
 	collection: string = COLLECTION
 ): Promise<RecentActivity | null> {
-	return fetchLatestForDid(did, collection);
+	const frames = await fetchFramesForDid(did, collection);
+	return frames[0] ?? null;
 }
 
 async function runBatches<T, R>(
@@ -169,33 +165,23 @@ export async function getRecentActiveRepos(options: {
 	const dids = await listReposByCollection(collection);
 
 	const activities: RecentActivity[] = [];
-	const staleDids: Did[] = [];
+	const didsToFetch: Did[] = [];
 
 	for (const did of dids) {
 		const cached = await getRepoActivityCache(collection, did);
-		if (cached && cached.latestCreatedAt && cached.latestCid) {
-			activities.push({
-				did: cached.did,
-				createdAt: cached.latestCreatedAt,
-				blobCid: cached.latestCid,
-				text: cached.latestText,
-				alt: cached.latestAlt
-			});
-		} else {
-			staleDids.push(did);
+		if (cached && !cached.latestCid) {
+			// Known to have no frames, skip
+			continue;
 		}
+		didsToFetch.push(did);
 	}
 
-	if (staleDids.length > 0) {
-		const refreshed = await runBatches(staleDids, batchSize, (did) =>
-			fetchLatestForDid(did, collection)
-		);
+	const fetched = await runBatches(didsToFetch, batchSize, (did) =>
+		fetchFramesForDid(did, collection)
+	);
 
-		for (const item of refreshed) {
-			if (item) {
-				activities.push(item);
-			}
-		}
+	for (const batch of fetched) {
+		activities.push(...batch);
 	}
 
 	await trimRepoActivityCache(500);

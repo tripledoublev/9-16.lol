@@ -131,7 +131,7 @@ async function fetchFollows(did: Did): Promise<Did[]> {
 	return follows;
 }
 
-async function fetchProfile(did: Did): Promise<AuthorState['profile'] | undefined> {
+export async function fetchProfile(did: Did): Promise<AuthorState['profile'] | undefined> {
 	const cached = await getCachedProfile(did);
 	if (cached) {
 		return {
