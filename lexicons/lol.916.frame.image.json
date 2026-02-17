@@ -7,7 +7,7 @@
 			"key": "tid",
 			"record": {
 				"type": "object",
-				"required": ["createdAt", "image"],
+				"required": ["createdAt", "embed"],
 				"properties": {
 					"createdAt": {
 						"type": "string",
@@ -17,18 +17,12 @@
 						"type": "string",
 						"maxLength": 240
 					},
-					"alt": {
-						"type": "string",
-						"maxLength": 300
+					"embed": {
+						"$ref": "app.bsky.embed.images"
 					},
 					"aspect": {
 						"type": "string",
 						"enum": ["9:16", "original", "other"]
-					},
-					"image": {
-						"type": "blob",
-						"accept": ["image/jpeg", "image/webp", "image/png"],
-						"maxSize": 2000000
 					},
 					"expiresAt": {
 						"type": "string",

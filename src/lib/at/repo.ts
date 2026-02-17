@@ -4,20 +4,72 @@ import { user } from './oauth.svelte';
 import { getClientForDid } from './client';
 import { COLLECTION, PROFILE_COLLECTION } from './settings';
 
+export interface LegacyFrameRecordValue {
+	createdAt: string;
+	text?: string;
+	alt?: string;
+	aspect?: '9:16' | 'original' | 'other';
+	image: {
+		$type: 'blob';
+		ref: { $link: string };
+		mimeType: string;
+		size: number;
+	};
+	expiresAt?: string;
+}
+
+function normalizeFrameRecordValue(
+	value: unknown
+): FrameRecord['value'] {
+	const val = value as Partial<FrameRecord['value']> & Partial<LegacyFrameRecordValue>;
+
+	if (val.embed) {
+		// Already in the new format
+		return val as FrameRecord['value'];
+	}
+
+	if (val.image) {
+		// Old format, convert it
+		return {
+			createdAt: val.createdAt ?? new Date().toISOString(),
+			text: val.text,
+			embed: {
+				$type: 'app.bsky.embed.images',
+				images: [
+					{
+						alt: val.alt ?? '', // Ensure alt is always a string
+						image: val.image
+					}
+				]
+			},
+			aspect: val.aspect,
+			expiresAt: val.expiresAt
+		} as FrameRecord['value'];
+	}
+
+	// Fallback for unexpected structures, though ideally should not happen
+	throw new Error('Invalid frame record value structure');
+}
+
 export interface FrameRecord {
 	uri: string;
 	cid: string;
 	value: {
 		createdAt: string;
 		text?: string;
-		alt?: string;
-		aspect?: '9:16' | 'original' | 'other';
-		image: {
-			$type: 'blob';
-			ref: { $link: string };
-			mimeType: string;
-			size: number;
+		embed: {
+			$type: 'app.bsky.embed.images';
+			images: Array<{
+				alt: string;
+				image: {
+					$type: 'blob';
+					ref: { $link: string };
+					mimeType: string;
+					size: number;
+				};
+			}>;
 		};
+		aspect?: '9:16' | 'original' | 'other';
 		expiresAt?: string;
 	};
 }
@@ -25,7 +77,7 @@ export interface FrameRecord {
 export async function createFrame(data: {
 	image: Blob;
 	text?: string;
-	alt?: string;
+	alt: string;
 	aspect?: '9:16' | 'original' | 'other';
 	expiresAt?: Date;
 }): Promise<{ uri: string; cid: string }> {
@@ -45,13 +97,20 @@ export async function createFrame(data: {
 	const rkey = TID.now();
 	const record: FrameRecord['value'] = {
 		createdAt: new Date().toISOString(),
-		// @ts-expect-error - blob property exists on response
-		image: blobResponse.data.blob as FrameRecord['value']['image'],
+		embed: {
+			$type: 'app.bsky.embed.images',
+			images: [
+				{
+					alt: data.alt,
+					// @ts-expect-error - blob property exists on response
+					image: blobResponse.data.blob as FrameRecord['value']['embed']['images'][0]['image']
+				}
+			]
+		},
 		aspect: data.aspect ?? '9:16'
 	};
 
 	if (data.text) record.text = data.text;
-	if (data.alt) record.alt = data.alt;
 	if (data.expiresAt) record.expiresAt = data.expiresAt.toISOString();
 
 	// @ts-expect-error - com.atproto.repo.createRecord is valid but not typed in bluesky package
@@ -108,7 +167,7 @@ export async function listFrames(
 	const frames = records.map((r) => ({
 		uri: r.uri,
 		cid: r.cid,
-		value: r.value as FrameRecord['value']
+		value: normalizeFrameRecordValue(r.value)
 	}));
 
 	return {
@@ -146,8 +205,7 @@ export async function getFrame(uri: string): Promise<FrameRecord | null> {
 		uri: response.data.uri,
 		// @ts-expect-error - uri/cid/value exist on response
 		cid: response.data.cid,
-		// @ts-expect-error - uri/cid/value exist on response
-		value: response.data.value as FrameRecord['value']
+		value: normalizeFrameRecordValue(response.data.value)
 	};
 }
 

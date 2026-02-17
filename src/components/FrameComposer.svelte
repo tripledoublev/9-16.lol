@@ -68,7 +68,7 @@
 			await createFrame({
 				image: blob,
 				text: text.trim() || undefined,
-				alt: altText.trim() || undefined,
+				alt: altText.trim(),
 				aspect: '9:16'
 			});
 
