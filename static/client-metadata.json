@@ -3,7 +3,7 @@
 	"client_name": "9:16.lol",
 	"client_uri": "https://9-16.lol",
 	"redirect_uris": ["https://9-16.lol/"],
-	"scope": "atproto transition:generic repo:lol.916.frame.image blob?accept=image/*",
+	"scope": "atproto repo:lol.916.frame.image repo:lol.916.user.profile blob?accept=image/*",
 	"grant_types": ["authorization_code", "refresh_token"],
 	"response_types": ["code"],
 	"token_endpoint_auth_method": "none",
