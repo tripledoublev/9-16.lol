@@ -13,6 +13,7 @@
 	let error = $state<string | null>(null);
 	let selectedFrame = $state<FrameRecord | null>(null);
 	let isDeleting = $state(false);
+	let confirmingDelete = $state(false);
 	let resolvedDid = $state<Did | null>(null);
 	let isFollowing = $state(false);
 	let isFollowingLoading = $state(false);
@@ -195,6 +196,7 @@
 
 	function closeViewer() {
 		selectedFrame = null;
+		confirmingDelete = false;
 	}
 
 	$effect(() => {
@@ -210,16 +212,15 @@
 
 	async function handleDelete() {
 		if (!selectedFrame || isDeleting) return;
-		if (!confirm('Delete this frame?')) return;
 
 		isDeleting = true;
+		confirmingDelete = false;
 		try {
 			const rkey = selectedFrame.uri.split('/').pop()!;
 			await deleteFrame(rkey);
 			frames = frames.filter((f) => f.uri !== selectedFrame!.uri);
 			closeViewer();
 		} catch (e) {
-			alert('Failed to delete frame');
 			console.error('Delete failed:', e);
 		} finally {
 			isDeleting = false;
@@ -431,21 +432,41 @@
 			tabindex="-1"
 		>
 			{#if isOwnProfile}
-				<button
-					type="button"
-					onclick={(e) => { e.stopPropagation(); handleDelete(); }}
-					disabled={isDeleting}
-					class="absolute top-4 left-4 text-white p-2 hover:bg-white/10 rounded-full z-10 disabled:opacity-50"
-					aria-label="Delete frame"
-				>
-					{#if isDeleting}
-						<div class="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+				<div class="absolute top-4 left-4 z-10 flex items-center gap-2">
+					{#if confirmingDelete}
+						<button
+							type="button"
+							onclick={(e) => { e.stopPropagation(); confirmingDelete = false; }}
+							class="text-white/70 text-sm px-3 py-1 rounded-full border border-white/20 hover:bg-white/10 transition-colors"
+						>
+							Cancel
+						</button>
+						<button
+							type="button"
+							onclick={(e) => { e.stopPropagation(); handleDelete(); }}
+							disabled={isDeleting}
+							class="text-white text-sm px-3 py-1 rounded-full bg-red-500/80 hover:bg-red-500 transition-colors disabled:opacity-50"
+						>
+							{#if isDeleting}
+								<div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></div>
+							{:else}
+								Delete
+							{/if}
+						</button>
 					{:else}
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-						</svg>
+						<button
+							type="button"
+							onclick={(e) => { e.stopPropagation(); confirmingDelete = true; }}
+							disabled={isDeleting}
+							class="text-white p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50"
+							aria-label="Delete frame"
+						>
+							<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+							</svg>
+						</button>
 					{/if}
-				</button>
+				</div>
 			{/if}
 
 			<button
