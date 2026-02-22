@@ -407,7 +407,7 @@
 						class="aspect-[9/16] bg-gray-900 rounded overflow-hidden hover:opacity-80 transition-opacity"
 					>
 						<img
-							src={getFrameImageUrl(did!, frame.value.image.ref.$link)}
+							src={getFrameImageUrl(did!, frame.value.embed.images[0].image.ref.$link)}
 							alt={frame.value.alt ?? 'Frame'}
 							class="w-full h-full object-cover"
 							loading="lazy"
@@ -460,7 +460,7 @@
 			</button>
 
 			<img
-				src={getFrameImageUrl(did!, selectedFrame.value.image.ref.$link)}
+				src={getFrameImageUrl(did!, selectedFrame.value.embed.images[0].image.ref.$link)}
 				alt={selectedFrame.value.alt ?? 'Frame'}
 				class="max-h-full max-w-full object-contain rounded-lg"
 			/>

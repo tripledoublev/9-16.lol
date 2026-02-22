@@ -17,7 +17,7 @@
 
 	let frame = $derived(author.frames[frameIndex]);
 	let imageUrl = $derived(
-		frame ? getFrameImageUrl(author.did, frame.value.image.ref.$link) : ''
+		frame ? getFrameImageUrl(author.did, frame.value.embed.images[0].image.ref.$link) : ''
 	);
 
 	let touchStartX = $state(0);
