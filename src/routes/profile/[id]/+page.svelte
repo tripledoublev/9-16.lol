@@ -176,13 +176,17 @@
 		}
 	}
 
+	function sortFramesNewestFirst(records: FrameRecord[]): FrameRecord[] {
+		return [...records].sort((a, b) => b.value.createdAt.localeCompare(a.value.createdAt));
+	}
+
 	async function loadFrames() {
 		isLoading = true;
 		error = null;
 
 		try {
 			const result = await listFrames(did!, { limit: 50 });
-			frames = result.frames;
+			frames = sortFramesNewestFirst(result.frames);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load frames';
 		} finally {
