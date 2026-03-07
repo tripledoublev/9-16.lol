@@ -164,11 +164,13 @@ export async function listFrames(
 		value: unknown;
 	}>;
 
-	const frames = records.map((r) => ({
-		uri: r.uri,
-		cid: r.cid,
-		value: normalizeFrameRecordValue(r.value)
-	}));
+	const frames = records
+		.map((r) => ({
+			uri: r.uri,
+			cid: r.cid,
+			value: normalizeFrameRecordValue(r.value)
+		}))
+		.sort((a, b) => b.value.createdAt.localeCompare(a.value.createdAt));
 
 	return {
 		frames,
@@ -200,12 +202,11 @@ export async function getFrame(uri: string): Promise<FrameRecord | null> {
 
 	if (!response.ok || !response.data) return null;
 
+	const data = response.data as any;
 	return {
-		// @ts-expect-error - uri/cid/value exist on response
-		uri: response.data.uri,
-		// @ts-expect-error - uri/cid/value exist on response
-		cid: response.data.cid,
-		value: normalizeFrameRecordValue(response.data.value)
+		uri: data.uri,
+		cid: data.cid,
+		value: normalizeFrameRecordValue(data.value)
 	};
 }
 

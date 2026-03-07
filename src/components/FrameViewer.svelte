@@ -143,7 +143,7 @@
 		{#if frame}
 			<img
 				src={imageUrl}
-				alt={frame.value.alt ?? 'Frame'}
+				alt={frame.value.embed.images[0].alt ?? 'Frame'}
 				class="max-h-full max-w-full object-contain rounded-lg"
 			/>
 		{/if}

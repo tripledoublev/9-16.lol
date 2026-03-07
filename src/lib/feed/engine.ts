@@ -8,7 +8,7 @@ import { db, TTL, getFollows, setFollows, getCachedProfile, setCachedProfile } f
 // Constants
 const FOLLOW_CAP = 150;
 const CONCURRENCY = 8;
-const PER_AUTHOR_PAGE = 5;
+const PER_AUTHOR_PAGE = 10;
 const PDS_TIMEOUT = 3000;
 
 export interface AuthorState {

@@ -413,7 +413,7 @@
 					>
 						<img
 							src={getFrameImageUrl(did!, frame.value.embed.images[0].image.ref.$link)}
-							alt={frame.value.alt ?? 'Frame'}
+							alt={frame.value.embed.images[0].alt ?? 'Frame'}
 							class="w-full h-full object-cover"
 							loading="lazy"
 						/>
@@ -486,7 +486,7 @@
 
 			<img
 				src={getFrameImageUrl(did!, selectedFrame.value.embed.images[0].image.ref.$link)}
-				alt={selectedFrame.value.alt ?? 'Frame'}
+				alt={selectedFrame.value.embed.images[0].alt ?? 'Frame'}
 				class="max-h-full max-w-full object-contain rounded-lg"
 			/>
 

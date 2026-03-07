@@ -1,7 +1,7 @@
 import type { Did } from '@atcute/lexicons';
 import type { FeedAuthor } from '$lib/feed/engine';
 import { createFeedGenerator, loadMoreFrames } from '$lib/feed/engine';
-import { getSeenState, setSeenState } from '$lib/cache/db';
+import { getSeenState, setSeenState, db } from '$lib/cache/db';
 
 export function createFeedStore(viewerDid: Did) {
 	let authors = $state<FeedAuthor[]>([]);
@@ -17,7 +17,10 @@ export function createFeedStore(viewerDid: Did) {
 		try {
 			// Load seen states
 			const seenStates = new Map<Did, string>();
-			// Note: We'd need to load these from the db, but for now start fresh
+			const states = await db.seenState.where('viewerDid').equals(viewerDid).toArray();
+			for (const s of states) {
+				seenStates.set(s.authorDid, s.lastSeenCreatedAt);
+			}
 
 			const generator = createFeedGenerator(viewerDid, seenStates);
 			const result = await generator.next();
